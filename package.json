@@ -1,0 +1,11 @@
+{
+  "name": "bt-brief",
+  "version": "1.0.0",
+  "description": "Bitcoin Timber Daily Brief API",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.37.0"
+  }
+}
