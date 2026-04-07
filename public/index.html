@@ -3,354 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BT Daily Brief</title>
+  <title>BT Command Center</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
   <style>
-    :root {
-      --bg: #0a0a0a;
-      --surface: #111111;
-      --surface-raised: #1a1a1a;
-      --border: #222222;
-      --text: #e0e0e0;
-      --text-dim: #777777;
-      --orange: #f7931a;
-      --orange-dim: rgba(247, 147, 26, 0.15);
-      --green: #4ade80;
-      --yellow: #fbbf24;
-      --red: #f87171;
-    }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'IBM Plex Sans', sans-serif;
-      min-height: 100vh;
-      line-height: 1.6;
-    }
-
-    .noise {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 24px 16px 64px;
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 0 24px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 32px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: var(--orange);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 16px;
-      color: #000;
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    .logo-text {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: 14px;
-      letter-spacing: 0.05em;
-      color: var(--text);
-    }
-
-    .logo-sub {
-      font-size: 11px;
-      font-weight: 400;
-      color: var(--text-dim);
-      letter-spacing: 0.02em;
-    }
-
-    .date-badge {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: var(--orange);
-      background: var(--orange-dim);
-      padding: 6px 12px;
-      border-radius: 4px;
-      border: 1px solid rgba(247, 147, 26, 0.25);
-    }
-
-    /* Brief sections */
-    .section {
-      margin-bottom: 28px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      overflow: hidden;
-      animation: fadeUp 0.4s ease both;
-    }
-
-    .section:nth-child(1) { animation-delay: 0.05s; }
-    .section:nth-child(2) { animation-delay: 0.1s; }
-    .section:nth-child(3) { animation-delay: 0.15s; }
-    .section:nth-child(4) { animation-delay: 0.2s; }
-    .section:nth-child(5) { animation-delay: 0.25s; }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .section-header {
-      padding: 14px 18px;
-      background: var(--surface-raised);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .section-num {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--orange);
-      background: var(--orange-dim);
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-    }
-
-    .section-title {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: var(--text);
-    }
-
-    .section-body {
-      padding: 16px 18px;
-    }
-
-    .section-body .line {
-      padding: 4px 0;
-      font-size: 14px;
-      color: var(--text);
-      display: flex;
-      gap: 8px;
-    }
-
-    .line-bullet {
-      color: var(--text-dim);
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-
-    .line-arrow {
-      color: var(--orange);
-      flex-shrink: 0;
-      font-weight: 600;
-      margin-top: 1px;
-    }
-
-    .line-content {
-      flex: 1;
-    }
-
-    /* Pipeline status colors */
-    .status-warm { color: var(--yellow); }
-    .status-active { color: var(--yellow); }
-    .status-stalled { color: var(--red); }
-    .status-green { color: var(--green); }
-
-    /* One Number highlight */
-    .one-number {
-      text-align: center;
-      padding: 28px 18px;
-    }
-
-    .one-number .big {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 64px;
-      font-weight: 700;
-      color: var(--orange);
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-
-    .one-number .caption {
-      font-size: 14px;
-      color: var(--text-dim);
-      max-width: 360px;
-      margin: 0 auto;
-    }
-
-    /* Footer */
-    .footer {
-      text-align: center;
-      padding: 24px 0;
-      border-top: 1px solid var(--border);
-      margin-top: 16px;
-    }
-
-    .footer p {
-      font-size: 12px;
-      color: var(--text-dim);
-      font-family: 'JetBrains Mono', monospace;
-    }
-
-    /* Loading state */
-    .loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 40vh;
-      gap: 16px;
-    }
-
-    .spinner {
-      width: 32px;
-      height: 32px;
-      border: 3px solid var(--border);
-      border-top-color: var(--orange);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html, body, #root { min-height:100vh; background:#080808; }
+    @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+    @keyframes glow { 0%,100% { box-shadow: 0 0 8px rgba(247,147,26,0.2); } 50% { box-shadow: 0 0 20px rgba(247,147,26,0.4); } }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    .loading-text {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      color: var(--text-dim);
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 80px 20px;
-      color: var(--text-dim);
-    }
-
-    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
-
-    .empty-state h2 {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 16px;
-      color: var(--text);
-      margin-bottom: 8px;
-    }
+    button { font-family: inherit; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
   </style>
 </head>
 <body>
-  <div class="noise"></div>
-  <div class="container">
-    <div class="header">
-      <div class="logo">
-        <div class="logo-icon">BT</div>
-        <div>
-          <div class="logo-text">DAILY BRIEF</div>
-          <div class="logo-sub">Bitcoin Timber Holdings</div>
-        </div>
-      </div>
-      <div class="date-badge" id="dateBadge">loading...</div>
-    </div>
-    <div id="content">
-      <div class="loading">
-        <div class="spinner"></div>
-        <div class="loading-text">Fetching brief...</div>
-      </div>
-    </div>
-    <div class="footer">
-      <p>BT Brief System &middot; bitcointimber@gmail.com</p>
-    </div>
-  </div>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-  <script>
-    async function loadBrief() {
-      try {
-        const res = await fetch('/api/brief');
-        const data = await res.json();
+    const API_URL = "/api/brief";
+    const BTC_API = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true";
 
-        if (!data.brief) {
-          document.getElementById('content').innerHTML = `
-            <div class="empty-state">
-              <div class="icon">⚡</div>
-              <h2>No brief yet today</h2>
-              <p>The daily brief hasn't been generated yet. Check back soon.</p>
-            </div>`;
-          document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
-          return;
-        }
+    const SECTION_COLORS = {
+      "YESTERDAY'S WORK": "#4ade80",
+      "OPEN THREADS": "#fbbf24",
+      "TODAY'S PRIORITIES": "#f7931a",
+      "PIPELINE PULSE": "#818cf8",
+      "ONE NUMBER": "#f7931a",
+    };
 
-        // Set date
-        const d = new Date(data.date + 'T12:00:00');
-        document.getElementById('dateBadge').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    const PIPELINE_STATUS = {
+      WARM: { color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.25)" },
+      ACTIVE: { color: "#4ade80", bg: "rgba(74,222,128,0.1)", border: "rgba(74,222,128,0.25)" },
+      STALLED: { color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
+      CLOSED: { color: "#6b7280", bg: "rgba(107,114,128,0.1)", border: "rgba(107,114,128,0.25)" },
+    };
 
-        // Parse sections from brief text
-        const text = data.brief;
-        const sections = parseBrief(text);
-        renderSections(sections);
-      } catch (err) {
-        document.getElementById('content').innerHTML = `
-          <div class="empty-state">
-            <div class="icon">⚠️</div>
-            <h2>Failed to load brief</h2>
-            <p>${err.message}</p>
-          </div>`;
-      }
-    }
+    /* ── SVG Icons ── */
+    const Icon = ({ d, size = 14, color = "#fff", strokeWidth = 2 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+        stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+        <path d={d} />
+      </svg>
+    );
 
+    const Icons = {
+      zap: (p) => <Icon {...p} d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />,
+      activity: (p) => <Icon {...p} d="M22 12h-4l-3 9L9 3l-3 9H2" />,
+      gitBranch: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 01-9 9"/></svg>,
+      target: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+      radio: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 010 8.49"/><path d="M7.76 16.24a6 6 0 010-8.49"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M4.93 19.07a10 10 0 010-14.14"/></svg>,
+      hash: (p) => <Icon {...p} d="M4 9h16M4 15h16M10 3l-2 18M16 3l-2 18" />,
+      clock: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+      trendUp: (p) => <Icon {...p} d="M23 6l-9.5 9.5-5-5L1 18" />,
+      trendDown: (p) => <Icon {...p} d="M23 18l-9.5-9.5-5 5L1 6" />,
+      chevDown: (p) => <Icon {...p} d="M6 9l6 6 6-6" />,
+      chevRight: (p) => <Icon {...p} d="M9 18l6-6-6-6" />,
+      alert: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+    };
+
+    const SECTION_ICONS = {
+      "YESTERDAY'S WORK": Icons.activity,
+      "OPEN THREADS": Icons.gitBranch,
+      "TODAY'S PRIORITIES": Icons.target,
+      "PIPELINE PULSE": Icons.radio,
+      "ONE NUMBER": Icons.hash,
+    };
+
+    /* ── Parsers ── */
     function parseBrief(text) {
       const sectionDefs = [
-        { num: '1', key: "YESTERDAY'S WORK", title: "Yesterday's Work" },
-        { num: '2', key: 'OPEN THREADS', title: 'Open Threads' },
-        { num: '3', key: "TODAY'S PRIORITIES", title: "Today's Priorities" },
-        { num: '4', key: 'PIPELINE PULSE', title: 'Pipeline Pulse' },
-        { num: '5', key: 'ONE NUMBER', title: 'One Number' },
+        { key: "YESTERDAY'S WORK", title: "Yesterday's Work" },
+        { key: "OPEN THREADS", title: "Open Threads" },
+        { key: "TODAY'S PRIORITIES", title: "Today's Priorities" },
+        { key: "PIPELINE PULSE", title: "Pipeline Pulse" },
+        { key: "ONE NUMBER", title: "One Number" },
       ];
-
-      const lines = text.split('\n');
+      const lines = text.split("\n");
       const sections = [];
       let current = null;
-
       for (const line of lines) {
         const trimmed = line.trim();
-        // Check if this line is a section header
-        const matchedSection = sectionDefs.find(s => trimmed.includes(s.key));
-        if (matchedSection) {
+        const matched = sectionDefs.find((s) => trimmed.includes(s.key));
+        if (matched) {
           if (current) sections.push(current);
-          current = { ...matchedSection, lines: [] };
+          current = { ...matched, lines: [] };
           continue;
         }
-        if (current && trimmed && !trimmed.startsWith('━') && !trimmed.startsWith('⚡ BT DAILY') && !trimmed.startsWith('Generated by')) {
+        if (current && trimmed && !trimmed.startsWith("━") && !trimmed.startsWith("⚡ BT DAILY") && !trimmed.startsWith("Generated by")) {
           current.lines.push(trimmed);
         }
       }
@@ -358,84 +105,491 @@
       return sections;
     }
 
-    function renderSections(sections) {
-      let html = '';
-      for (const sec of sections) {
-        if (sec.key === 'ONE NUMBER') {
-          html += renderOneNumber(sec);
-        } else {
-          html += renderSection(sec);
-        }
-      }
-      document.getElementById('content').innerHTML = html;
+    function parsePipeline(lines) {
+      return lines.map((line) => {
+        const cleaned = line.replace(/^[-•]\s*/, "");
+        let status = "ACTIVE";
+        if (cleaned.includes("WARM")) status = "WARM";
+        if (cleaned.includes("STALLED")) status = "STALLED";
+        if (cleaned.includes("CLOSED")) status = "CLOSED";
+        const nameMatch = cleaned.match(/^(.+?)\s*[→(]/);
+        const name = nameMatch ? nameMatch[1].trim() : cleaned.split("→")[0].trim();
+        const detailMatch = cleaned.match(/→\s*(.+)/);
+        const detail = detailMatch ? detailMatch[1].replace(/🟡|🔴|🟢/g, "").trim() : "";
+        return { name, status, detail, raw: cleaned };
+      });
     }
 
-    function renderSection(sec) {
-      let bodyHtml = '';
-      for (const line of sec.lines) {
-        if (line.startsWith('→') || line.startsWith('->')) {
-          const content = line.replace(/^→\s*/, '').replace(/^->\s*/, '');
-          bodyHtml += `<div class="line"><span class="line-arrow">→</span><span class="line-content">${esc(content)}</span></div>`;
-        } else if (line.startsWith('-') || line.startsWith('•')) {
-          const content = line.replace(/^[-•]\s*/, '');
-          bodyHtml += `<div class="line"><span class="line-bullet">›</span><span class="line-content">${highlightStatus(esc(content))}</span></div>`;
-        } else {
-          bodyHtml += `<div class="line"><span class="line-content">${highlightStatus(esc(content))}</span></div>`;
-        }
-      }
+    function parseOneNumber(lines) {
+      const text = lines.join(" ");
+      const match = text.match(/^(\d+[\.,]?\d*%?)\s*[—–\-]\s*(.*)/);
+      if (match) return { number: match[1], caption: match[2] };
+      const numMatch = text.match(/^(\d+[\.,]?\d*%?)/);
+      return {
+        number: numMatch ? numMatch[1] : "—",
+        caption: numMatch ? text.slice(numMatch[0].length).replace(/^\s*[—–\-]\s*/, "") : text,
+      };
+    }
 
-      return `<div class="section">
-        <div class="section-header">
-          <div class="section-num">${sec.num}</div>
-          <div class="section-title">${sec.title}</div>
+    /* ── Components ── */
+    function Grain() {
+      return (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", opacity: 0.035,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        }} />
+      );
+    }
+
+    function Scanline() {
+      return (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 1, pointerEvents: "none", opacity: 0.03,
+          background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)",
+        }} />
+      );
+    }
+
+    function BTCTicker({ price, change }) {
+      const isUp = change >= 0;
+      return (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 12,
+          padding: "8px 14px", borderRadius: 6,
+          background: "rgba(247,147,26,0.06)",
+          border: "1px solid rgba(247,147,26,0.15)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{
+              width: 22, height: 22, borderRadius: 4,
+              background: "#f7931a", display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 11, fontWeight: 800, color: "#000", fontFamily: "'Fira Code', monospace",
+            }}>₿</div>
+            <span style={{ fontFamily: "'Fira Code', monospace", fontSize: 14, fontWeight: 600, color: "#f7931a" }}>
+              {price ? `$${price.toLocaleString()}` : "..."}
+            </span>
+          </div>
+          {change !== null && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 3,
+              fontSize: 11, fontWeight: 600, fontFamily: "'Fira Code', monospace",
+              color: isUp ? "#4ade80" : "#f87171",
+            }}>
+              {isUp ? Icons.trendUp({ size: 12, color: "#4ade80" }) : Icons.trendDown({ size: 12, color: "#f87171" })}
+              {Math.abs(change).toFixed(1)}%
+            </div>
+          )}
         </div>
-        <div class="section-body">${bodyHtml}</div>
-      </div>`;
-
-      function content() { return line; } // not used, just fallback
+      );
     }
 
-    function renderOneNumber(sec) {
-      const text = sec.lines.join(' ');
-      const match = text.match(/^(\d+[\.,]?\d*%?)\s*[—–-]\s*(.*)/);
-      let big = '', caption = '';
-      if (match) {
-        big = match[1];
-        caption = match[2];
-      } else {
-        // Try to extract leading number
-        const numMatch = text.match(/^(\d+[\.,]?\d*%?)/);
-        big = numMatch ? numMatch[1] : '—';
-        caption = numMatch ? text.slice(numMatch[0].length).replace(/^\s*[—–-]\s*/, '') : text;
+    function SectionCard({ section, index, isExpanded, onToggle }) {
+      const IconFn = SECTION_ICONS[section.key] || Icons.activity;
+      const accentColor = SECTION_COLORS[section.key] || "#f7931a";
+
+      if (section.key === "ONE NUMBER") {
+        const { number, caption } = parseOneNumber(section.lines);
+        return (
+          <div style={{
+            animation: `slideUp 0.5s ease ${index * 0.08}s both`,
+            background: "linear-gradient(135deg, rgba(247,147,26,0.08) 0%, rgba(10,10,10,0.95) 60%)",
+            border: "1px solid rgba(247,147,26,0.2)",
+            borderRadius: 10, overflow: "hidden", position: "relative",
+          }}>
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0, height: 2,
+              background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
+            }} />
+            <div style={{ padding: "40px 24px", textAlign: "center" }}>
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 20,
+              }}>
+                {Icons.hash({ size: 14, color: accentColor })}
+                <span style={{
+                  fontFamily: "'Fira Code', monospace", fontSize: 11, fontWeight: 600,
+                  letterSpacing: "0.12em", textTransform: "uppercase", color: accentColor,
+                }}>ONE NUMBER</span>
+              </div>
+              <div style={{
+                fontFamily: "'Fira Code', monospace", fontSize: 80, fontWeight: 700,
+                color: "#f7931a", lineHeight: 1, marginBottom: 12,
+                textShadow: "0 0 60px rgba(247,147,26,0.3), 0 0 120px rgba(247,147,26,0.1)",
+              }}>{number}</div>
+              <div style={{
+                fontSize: 15, color: "#999", maxWidth: 400, margin: "0 auto", lineHeight: 1.5,
+                fontFamily: "'DM Sans', sans-serif",
+              }}>{caption}</div>
+            </div>
+          </div>
+        );
       }
 
-      return `<div class="section">
-        <div class="section-header">
-          <div class="section-num">5</div>
-          <div class="section-title">One Number</div>
+      if (section.key === "PIPELINE PULSE") {
+        const deals = parsePipeline(section.lines);
+        return (
+          <div style={{
+            animation: `slideUp 0.5s ease ${index * 0.08}s both`,
+            background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 10, overflow: "hidden",
+            position: "relative",
+          }}>
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0, height: 2,
+              background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
+            }} />
+            <button onClick={onToggle} style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "14px 18px", background: "rgba(255,255,255,0.02)",
+              border: "none", borderBottom: "1px solid #1a1a1a", cursor: "pointer", color: "#e0e0e0",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{
+                  width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
+                  background: `${accentColor}15`, border: `1px solid ${accentColor}30`,
+                }}>
+                  {IconFn({ size: 14, color: accentColor })}
+                </div>
+                <span style={{
+                  fontFamily: "'Fira Code', monospace", fontSize: 12, fontWeight: 600,
+                  letterSpacing: "0.06em",
+                }}>{section.title.toUpperCase()}</span>
+                <span style={{
+                  fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#555",
+                  background: "#1a1a1a", padding: "2px 8px", borderRadius: 4,
+                }}>{deals.length}</span>
+              </div>
+              {isExpanded ? Icons.chevDown({ size: 14, color: "#555" }) : Icons.chevRight({ size: 14, color: "#555" })}
+            </button>
+            {isExpanded && (
+              <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                {deals.map((deal, i) => {
+                  const st = PIPELINE_STATUS[deal.status] || PIPELINE_STATUS.ACTIVE;
+                  return (
+                    <div key={i} style={{
+                      display: "flex", alignItems: "stretch", gap: 12,
+                      padding: "12px 14px", borderRadius: 8,
+                      background: st.bg, border: `1px solid ${st.border}`,
+                      animation: `fadeIn 0.3s ease ${i * 0.05}s both`,
+                    }}>
+                      <div style={{ width: 3, borderRadius: 2, background: st.color, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 600,
+                          color: "#e0e0e0", marginBottom: 4,
+                        }}>{deal.name}</div>
+                        <div style={{
+                          fontFamily: "'Fira Code', monospace", fontSize: 11, color: "#888", lineHeight: 1.4,
+                        }}>{deal.detail}</div>
+                      </div>
+                      <div style={{
+                        fontFamily: "'Fira Code', monospace", fontSize: 10, fontWeight: 600,
+                        color: st.color, background: `${st.color}15`,
+                        padding: "3px 8px", borderRadius: 4, height: "fit-content",
+                        border: `1px solid ${st.border}`,
+                      }}>{deal.status}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      /* Default section */
+      return (
+        <div style={{
+          animation: `slideUp 0.5s ease ${index * 0.08}s both`,
+          background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 10, overflow: "hidden",
+          position: "relative",
+        }}>
+          <div style={{
+            position: "absolute", top: 0, left: 0, right: 0, height: 2,
+            background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`,
+          }} />
+          <button onClick={onToggle} style={{
+            width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+            padding: "14px 18px", background: "rgba(255,255,255,0.02)",
+            border: "none", borderBottom: isExpanded ? "1px solid #1a1a1a" : "none", cursor: "pointer",
+            color: "#e0e0e0",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center",
+                background: `${accentColor}15`, border: `1px solid ${accentColor}30`,
+              }}>
+                {IconFn({ size: 14, color: accentColor })}
+              </div>
+              <span style={{
+                fontFamily: "'Fira Code', monospace", fontSize: 12, fontWeight: 600,
+                letterSpacing: "0.06em",
+              }}>{section.title.toUpperCase()}</span>
+              <span style={{
+                fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#555",
+                background: "#1a1a1a", padding: "2px 8px", borderRadius: 4,
+              }}>{section.lines.length}</span>
+            </div>
+            {isExpanded ? Icons.chevDown({ size: 14, color: "#555" }) : Icons.chevRight({ size: 14, color: "#555" })}
+          </button>
+          {isExpanded && (
+            <div style={{ padding: "12px 18px" }}>
+              {section.lines.map((line, i) => {
+                const isArrow = line.startsWith("→") || line.startsWith("->");
+                const content = line.replace(/^[→\->•\-]\s*/, "");
+                return (
+                  <div key={i} style={{
+                    display: "flex", gap: 10, padding: "7px 0",
+                    borderBottom: i < section.lines.length - 1 ? "1px solid #141414" : "none",
+                    animation: `fadeIn 0.3s ease ${i * 0.03}s both`,
+                  }}>
+                    <span style={{
+                      color: isArrow ? accentColor : "#444", flexShrink: 0, marginTop: 2,
+                      fontWeight: isArrow ? 700 : 400, fontSize: 14,
+                    }}>
+                      {isArrow ? "→" : "›"}
+                    </span>
+                    <span style={{
+                      fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#ccc", lineHeight: 1.5,
+                      fontWeight: isArrow ? 500 : 400,
+                    }}>{content}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-        <div class="one-number">
-          <div class="big">${esc(big)}</div>
-          <div class="caption">${esc(caption)}</div>
+      );
+    }
+
+    /* ── App ── */
+    function App() {
+      const [brief, setBrief] = useState(null);
+      const [sections, setSections] = useState([]);
+      const [expanded, setExpanded] = useState({});
+      const [btcPrice, setBtcPrice] = useState(null);
+      const [btcChange, setBtcChange] = useState(null);
+      const [loading, setLoading] = useState(true);
+      const [error, setError] = useState(null);
+      const [now, setNow] = useState(new Date());
+
+      useEffect(() => {
+        const timer = setInterval(() => setNow(new Date()), 1000);
+        return () => clearInterval(timer);
+      }, []);
+
+      useEffect(() => {
+        fetch(API_URL)
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.brief) {
+              setBrief(data);
+              const parsed = parseBrief(data.brief);
+              setSections(parsed);
+              const exp = {};
+              parsed.forEach((s) => (exp[s.key] = true));
+              setExpanded(exp);
+            } else {
+              setError("No brief found yet today");
+            }
+            setLoading(false);
+          })
+          .catch((e) => { setError(e.message); setLoading(false); });
+      }, []);
+
+      useEffect(() => {
+        const fetchBTC = () => {
+          fetch(BTC_API)
+            .then((r) => r.json())
+            .then((data) => {
+              if (data.bitcoin) {
+                setBtcPrice(data.bitcoin.usd);
+                setBtcChange(data.bitcoin.usd_24h_change);
+              }
+            })
+            .catch(() => {});
+        };
+        fetchBTC();
+        const interval = setInterval(fetchBTC, 60000);
+        return () => clearInterval(interval);
+      }, []);
+
+      const toggleSection = (key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+
+      const briefDate = brief ? new Date(brief.date + "T12:00:00") : new Date();
+      const storedAt = brief?.stored_at ? new Date(brief.stored_at) : null;
+
+      const priorityCount = sections.find((s) => s.key === "TODAY'S PRIORITIES")?.lines.length || 0;
+      const threadCount = sections.find((s) => s.key === "OPEN THREADS")?.lines.length || 0;
+      const pipelineLines = sections.find((s) => s.key === "PIPELINE PULSE")?.lines || [];
+      const warmCount = pipelineLines.filter((l) => l.includes("WARM") || l.includes("ACTIVE")).length;
+
+      return (
+        <div style={{
+          minHeight: "100vh", background: "#080808", color: "#e0e0e0",
+          fontFamily: "'DM Sans', sans-serif", position: "relative",
+        }}>
+          <Grain />
+          <Scanline />
+
+          {/* Top bar */}
+          <div style={{
+            position: "sticky", top: 0, zIndex: 50,
+            background: "rgba(8,8,8,0.85)", backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            borderBottom: "1px solid #1a1a1a",
+          }}>
+            <div style={{
+              maxWidth: 800, margin: "0 auto", padding: "12px 20px",
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 8,
+                  background: "linear-gradient(135deg, #f7931a, #e67e00)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "'Fira Code', monospace", fontWeight: 800, fontSize: 14, color: "#000",
+                  animation: "glow 3s ease infinite",
+                }}>BT</div>
+                <div>
+                  <div style={{
+                    fontFamily: "'Fira Code', monospace", fontWeight: 700, fontSize: 13,
+                    letterSpacing: "0.08em", color: "#fff",
+                  }}>COMMAND CENTER</div>
+                  <div style={{
+                    fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#555",
+                    letterSpacing: "0.04em",
+                  }}>BITCOIN TIMBER HOLDINGS</div>
+                </div>
+              </div>
+              <BTCTicker price={btcPrice} change={btcChange} />
+            </div>
+          </div>
+
+          <div style={{
+            maxWidth: 800, margin: "0 auto", padding: "20px 20px 80px",
+            position: "relative", zIndex: 2,
+          }}>
+            {/* Date + Status bar */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              marginBottom: 20, flexWrap: "wrap", gap: 10,
+            }}>
+              <div style={{
+                fontFamily: "'Fira Code', monospace", fontSize: 13, fontWeight: 600,
+                color: "#f7931a", display: "flex", alignItems: "center", gap: 8,
+              }}>
+                {Icons.zap({ size: 14, color: "#f7931a" })}
+                {briefDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
+              </div>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#444",
+              }}>
+                {Icons.clock({ size: 10, color: "#444" })}
+                {now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                {storedAt && (
+                  <span style={{ marginLeft: 8, color: "#333" }}>
+                    brief generated {storedAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            {!loading && !error && (
+              <div style={{
+                display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10,
+                marginBottom: 20, animation: "slideUp 0.4s ease both",
+              }}>
+                {[
+                  { label: "PRIORITIES", value: priorityCount, color: "#f7931a", icon: Icons.target },
+                  { label: "THREADS", value: threadCount, color: "#fbbf24", icon: Icons.gitBranch },
+                  { label: "WARM DEALS", value: warmCount, color: "#4ade80", icon: Icons.trendUp },
+                ].map(({ label, value, color, icon: StatIcon }, i) => (
+                  <div key={i} style={{
+                    background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8,
+                    padding: "14px 16px", textAlign: "center",
+                  }}>
+                    <div style={{ marginBottom: 6, display: "flex", justifyContent: "center" }}>
+                      {StatIcon({ size: 14, color })}
+                    </div>
+                    <div style={{
+                      fontFamily: "'Fira Code', monospace", fontSize: 26, fontWeight: 700,
+                      color, lineHeight: 1, marginBottom: 4,
+                    }}>{value}</div>
+                    <div style={{
+                      fontFamily: "'Fira Code', monospace", fontSize: 9,
+                      letterSpacing: "0.1em", color: "#444",
+                    }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Loading */}
+            {loading && (
+              <div style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                justifyContent: "center", minHeight: "50vh", gap: 16,
+              }}>
+                <div style={{
+                  width: 36, height: 36, border: "3px solid #1a1a1a",
+                  borderTopColor: "#f7931a", borderRadius: "50%",
+                  animation: "spin 0.7s linear infinite",
+                }} />
+                <div style={{ fontFamily: "'Fira Code', monospace", fontSize: 12, color: "#444" }}>
+                  LOADING BRIEF...
+                </div>
+              </div>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div style={{
+                textAlign: "center", padding: "80px 20px",
+                animation: "fadeIn 0.4s ease both",
+              }}>
+                {Icons.alert({ size: 32, color: "#f87171" })}
+                <div style={{
+                  fontFamily: "'Fira Code', monospace", fontSize: 14, color: "#f87171",
+                  marginTop: 12, marginBottom: 8,
+                }}>{error}</div>
+                <div style={{ fontSize: 13, color: "#444" }}>Run the daily brief to populate.</div>
+              </div>
+            )}
+
+            {/* Sections */}
+            {!loading && !error && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {sections.map((sec, i) => (
+                  <SectionCard
+                    key={sec.key}
+                    section={sec}
+                    index={i}
+                    isExpanded={expanded[sec.key]}
+                    onToggle={() => toggleSection(sec.key)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={{
+              marginTop: 32, paddingTop: 20, borderTop: "1px solid #141414",
+              textAlign: "center",
+            }}>
+              <div style={{
+                fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#2a2a2a",
+                letterSpacing: "0.06em",
+              }}>
+                BT COMMAND CENTER • BITCOIN TIMBER HOLDINGS, LLC • {new Date().getFullYear()}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>`;
+      );
     }
 
-    function highlightStatus(html) {
-      return html
-        .replace(/🟡\s*WARM/g, '<span class="status-warm">🟡 WARM</span>')
-        .replace(/🟡\s*ACTIVE/g, '<span class="status-active">🟡 ACTIVE</span>')
-        .replace(/🔴\s*STALLED/g, '<span class="status-stalled">🔴 STALLED</span>')
-        .replace(/🟢\s*(\w+)/g, '<span class="status-green">🟢 $1</span>');
-    }
-
-    function esc(s) {
-      const d = document.createElement('div');
-      d.textContent = s;
-      return d.innerHTML;
-    }
-
-    loadBrief();
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
 </body>
 </html>
