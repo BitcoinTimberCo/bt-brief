@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BT Command Center</title>
+  <meta name="description" content="Bitcoin Timber Holdings â Daily Brief Command Center">
+  <meta name="theme-color" content="#f7931a">
+  <meta property="og:title" content="BT Command Center">
+  <meta property="og:description" content="Bitcoin Timber Holdings â Daily Brief Command Center">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23f7931a'/><text x='50' y='68' font-family='monospace' font-size='50' font-weight='900' fill='%23000' text-anchor='middle'>BT</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -17,19 +23,37 @@
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
     @keyframes glow { 0%,100% { box-shadow: 0 0 8px rgba(247,147,26,0.2); } 50% { box-shadow: 0 0 20px rgba(247,147,26,0.4); } }
     @keyframes spin { to { transform: rotate(360deg); } }
-    button { font-family: inherit; }
+    @keyframes countUp { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
+    button { font-family: inherit; cursor: pointer; }
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #0a0a0a; }
     ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .top-bar-inner { flex-direction: column !important; gap: 10px !important; align-items: flex-start !important; }
+      .btc-ticker { align-self: flex-start !important; }
+      .stats-grid { grid-template-columns: 1fr !important; }
+      .date-bar { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+      .date-nav { width: 100% !important; justify-content: space-between !important; }
+      .section-header-label { font-size: 11px !important; }
+      .one-number-value { font-size: 52px !important; }
+    }
+    @media (min-width: 641px) and (max-width: 768px) {
+      .stats-grid { grid-template-columns: repeat(3, 1fr) !important; }
+      .one-number-value { font-size: 64px !important; }
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useCallback, useRef } = React;
 
     const API_URL = "/api/brief";
     const BTC_API = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true";
+    const BRIEF_REFRESH_MS = 5 * 60 * 1000; // 5 min
+    const BTC_REFRESH_MS = 60 * 1000; // 60s
 
     const SECTION_COLORS = {
       "YESTERDAY'S WORK": "#4ade80",
@@ -46,7 +70,7 @@
       CLOSED: { color: "#6b7280", bg: "rgba(107,114,128,0.1)", border: "rgba(107,114,128,0.25)" },
     };
 
-    /* ── SVG Icons ── */
+    /* ââ SVG Icons ââ */
     const Icon = ({ d, size = 14, color = "#fff", strokeWidth = 2 }) => (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
         stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -66,7 +90,12 @@
       trendDown: (p) => <Icon {...p} d="M23 18l-9.5-9.5-5 5L1 6" />,
       chevDown: (p) => <Icon {...p} d="M6 9l6 6 6-6" />,
       chevRight: (p) => <Icon {...p} d="M9 18l6-6-6-6" />,
+      chevLeft: (p) => <Icon {...p} d="M15 18l-6-6 6-6" />,
+      refresh: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>,
       alert: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+      calendar: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+      check: (p) => <Icon {...p} d="M20 6L9 17l-5-5" />,
+      wifi: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>,
     };
 
     const SECTION_ICONS = {
@@ -77,7 +106,30 @@
       "ONE NUMBER": Icons.hash,
     };
 
-    /* ── Parsers ── */
+    /* ââ Helpers ââ */
+    function formatDateISO(d) {
+      return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    }
+    function shiftDate(isoStr, days) {
+      const d = new Date(isoStr + "T12:00:00");
+      d.setDate(d.getDate() + days);
+      return formatDateISO(d);
+    }
+    function isToday(isoStr) {
+      return isoStr === formatDateISO(new Date());
+    }
+    function isFuture(isoStr) {
+      return isoStr > formatDateISO(new Date());
+    }
+    function relativeDay(isoStr) {
+      const today = formatDateISO(new Date());
+      const yesterday = shiftDate(today, -1);
+      if (isoStr === today) return "Today";
+      if (isoStr === yesterday) return "Yesterday";
+      return null;
+    }
+
+    /* ââ Parsers ââ */
     function parseBrief(text) {
       const sectionDefs = [
         { key: "YESTERDAY'S WORK", title: "Yesterday's Work" },
@@ -97,7 +149,7 @@
           current = { ...matched, lines: [] };
           continue;
         }
-        if (current && trimmed && !trimmed.startsWith("━") && !trimmed.startsWith("⚡ BT DAILY") && !trimmed.startsWith("Generated by")) {
+        if (current && trimmed && !trimmed.startsWith("â") && !trimmed.startsWith("â¡ BT DAILY") && !trimmed.startsWith("Generated by")) {
           current.lines.push(trimmed);
         }
       }
@@ -107,31 +159,31 @@
 
     function parsePipeline(lines) {
       return lines.map((line) => {
-        const cleaned = line.replace(/^[-•]\s*/, "");
+        const cleaned = line.replace(/^[-â¢]\s*/, "");
         let status = "ACTIVE";
         if (cleaned.includes("WARM")) status = "WARM";
         if (cleaned.includes("STALLED")) status = "STALLED";
         if (cleaned.includes("CLOSED")) status = "CLOSED";
-        const nameMatch = cleaned.match(/^(.+?)\s*[→(]/);
-        const name = nameMatch ? nameMatch[1].trim() : cleaned.split("→")[0].trim();
-        const detailMatch = cleaned.match(/→\s*(.+)/);
-        const detail = detailMatch ? detailMatch[1].replace(/🟡|🔴|🟢/g, "").trim() : "";
+        const nameMatch = cleaned.match(/^(.+?)\s*[â(]/);
+        const name = nameMatch ? nameMatch[1].trim() : cleaned.split("â")[0].trim();
+        const detailMatch = cleaned.match(/â\s*(.+)/);
+        const detail = detailMatch ? detailMatch[1].replace(/ð¡|ð´|ð¢/g, "").trim() : "";
         return { name, status, detail, raw: cleaned };
       });
     }
 
     function parseOneNumber(lines) {
       const text = lines.join(" ");
-      const match = text.match(/^(\d+[\.,]?\d*%?)\s*[—–\-]\s*(.*)/);
+      const match = text.match(/^(\d+[\.,]?\d*%?)\s*[ââ\-]\s*(.*)/);
       if (match) return { number: match[1], caption: match[2] };
       const numMatch = text.match(/^(\d+[\.,]?\d*%?)/);
       return {
-        number: numMatch ? numMatch[1] : "—",
-        caption: numMatch ? text.slice(numMatch[0].length).replace(/^\s*[—–\-]\s*/, "") : text,
+        number: numMatch ? numMatch[1] : "â",
+        caption: numMatch ? text.slice(numMatch[0].length).replace(/^\s*[ââ\-]\s*/, "") : text,
       };
     }
 
-    /* ── Components ── */
+    /* ââ Components ââ */
     function Grain() {
       return (
         <div style={{
@@ -153,7 +205,7 @@
     function BTCTicker({ price, change }) {
       const isUp = change >= 0;
       return (
-        <div style={{
+        <div className="btc-ticker" style={{
           display: "flex", alignItems: "center", gap: 12,
           padding: "8px 14px", borderRadius: 6,
           background: "rgba(247,147,26,0.06)",
@@ -164,7 +216,7 @@
               width: 22, height: 22, borderRadius: 4,
               background: "#f7931a", display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 11, fontWeight: 800, color: "#000", fontFamily: "'Fira Code', monospace",
-            }}>₿</div>
+            }}>â¿</div>
             <span style={{ fontFamily: "'Fira Code', monospace", fontSize: 14, fontWeight: 600, color: "#f7931a" }}>
               {price ? `$${price.toLocaleString()}` : "..."}
             </span>
@@ -178,6 +230,74 @@
               {isUp ? Icons.trendUp({ size: 12, color: "#4ade80" }) : Icons.trendDown({ size: 12, color: "#f87171" })}
               {Math.abs(change).toFixed(1)}%
             </div>
+          )}
+        </div>
+      );
+    }
+
+    function StatusDot({ live, lastRefresh }) {
+      const ago = lastRefresh ? Math.round((Date.now() - lastRefresh) / 1000) : null;
+      const label = ago !== null ? (ago < 60 ? "just now" : `${Math.floor(ago/60)}m ago`) : "";
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, fontFamily: "'Fira Code', monospace", color: "#444" }}
+             title={`Last refreshed ${label}`}>
+          <div style={{
+            width: 6, height: 6, borderRadius: "50%",
+            background: live ? "#4ade80" : "#f87171",
+            animation: live ? "pulse 2s ease infinite" : "none",
+          }} />
+          <span>{live ? "LIVE" : "OFFLINE"}</span>
+          {label && <span style={{ color: "#333" }}>â¢ {label}</span>}
+        </div>
+      );
+    }
+
+    function DateNav({ currentDate, onPrev, onNext, onToday, hasNext }) {
+      const d = new Date(currentDate + "T12:00:00");
+      const dayLabel = relativeDay(currentDate);
+      const formatted = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+      return (
+        <div className="date-nav" style={{
+          display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <button onClick={onPrev} style={{
+            background: "rgba(255,255,255,0.04)", border: "1px solid #222", borderRadius: 6,
+            padding: "6px 8px", color: "#888", display: "flex", alignItems: "center",
+            transition: "all 0.15s",
+          }} title="Previous day">
+            {Icons.chevLeft({ size: 14, color: "#888" })}
+          </button>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+            {Icons.zap({ size: 14, color: "#f7931a" })}
+            <span style={{
+              fontFamily: "'Fira Code', monospace", fontSize: 13, fontWeight: 600,
+              color: "#f7931a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>
+              {dayLabel && <span style={{ color: "#fff", marginRight: 6 }}>{dayLabel} â</span>}
+              {formatted}
+            </span>
+          </div>
+
+          <button onClick={onNext} disabled={!hasNext} style={{
+            background: hasNext ? "rgba(255,255,255,0.04)" : "transparent",
+            border: `1px solid ${hasNext ? "#222" : "#151515"}`, borderRadius: 6,
+            padding: "6px 8px", color: hasNext ? "#888" : "#333", display: "flex", alignItems: "center",
+            opacity: hasNext ? 1 : 0.4, cursor: hasNext ? "pointer" : "default",
+            transition: "all 0.15s",
+          }} title="Next day">
+            {Icons.chevRight({ size: 14, color: hasNext ? "#888" : "#333" })}
+          </button>
+
+          {!isToday(currentDate) && (
+            <button onClick={onToday} style={{
+              background: "rgba(247,147,26,0.1)", border: "1px solid rgba(247,147,26,0.25)", borderRadius: 6,
+              padding: "4px 10px", fontFamily: "'Fira Code', monospace", fontSize: 10,
+              fontWeight: 600, color: "#f7931a", letterSpacing: "0.05em",
+              transition: "all 0.15s",
+            }}>
+              TODAY
+            </button>
           )}
         </div>
       );
@@ -210,10 +330,11 @@
                   letterSpacing: "0.12em", textTransform: "uppercase", color: accentColor,
                 }}>ONE NUMBER</span>
               </div>
-              <div style={{
+              <div className="one-number-value" style={{
                 fontFamily: "'Fira Code', monospace", fontSize: 80, fontWeight: 700,
                 color: "#f7931a", lineHeight: 1, marginBottom: 12,
                 textShadow: "0 0 60px rgba(247,147,26,0.3), 0 0 120px rgba(247,147,26,0.1)",
+                animation: `countUp 0.6s ease ${index * 0.08}s both`,
               }}>{number}</div>
               <div style={{
                 fontSize: 15, color: "#999", maxWidth: 400, margin: "0 auto", lineHeight: 1.5,
@@ -239,7 +360,7 @@
             <button onClick={onToggle} style={{
               width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
               padding: "14px 18px", background: "rgba(255,255,255,0.02)",
-              border: "none", borderBottom: "1px solid #1a1a1a", cursor: "pointer", color: "#e0e0e0",
+              border: "none", borderBottom: "1px solid #1a1a1a", color: "#e0e0e0",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{
@@ -248,7 +369,7 @@
                 }}>
                   {IconFn({ size: 14, color: accentColor })}
                 </div>
-                <span style={{
+                <span className="section-header-label" style={{
                   fontFamily: "'Fira Code', monospace", fontSize: 12, fontWeight: 600,
                   letterSpacing: "0.06em",
                 }}>{section.title.toUpperCase()}</span>
@@ -309,7 +430,7 @@
           <button onClick={onToggle} style={{
             width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "14px 18px", background: "rgba(255,255,255,0.02)",
-            border: "none", borderBottom: isExpanded ? "1px solid #1a1a1a" : "none", cursor: "pointer",
+            border: "none", borderBottom: isExpanded ? "1px solid #1a1a1a" : "none",
             color: "#e0e0e0",
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -319,7 +440,7 @@
               }}>
                 {IconFn({ size: 14, color: accentColor })}
               </div>
-              <span style={{
+              <span className="section-header-label" style={{
                 fontFamily: "'Fira Code', monospace", fontSize: 12, fontWeight: 600,
                 letterSpacing: "0.06em",
               }}>{section.title.toUpperCase()}</span>
@@ -333,8 +454,8 @@
           {isExpanded && (
             <div style={{ padding: "12px 18px" }}>
               {section.lines.map((line, i) => {
-                const isArrow = line.startsWith("→") || line.startsWith("->");
-                const content = line.replace(/^[→\->•\-]\s*/, "");
+                const isArrow = line.startsWith("â") || line.startsWith("->");
+                const content = line.replace(/^[â\->â¢\-]\s*/, "");
                 return (
                   <div key={i} style={{
                     display: "flex", gap: 10, padding: "7px 0",
@@ -345,7 +466,7 @@
                       color: isArrow ? accentColor : "#444", flexShrink: 0, marginTop: 2,
                       fontWeight: isArrow ? 700 : 400, fontSize: 14,
                     }}>
-                      {isArrow ? "→" : "›"}
+                      {isArrow ? "â" : "âº"}
                     </span>
                     <span style={{
                       fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#ccc", lineHeight: 1.5,
@@ -360,7 +481,7 @@
       );
     }
 
-    /* ── App ── */
+    /* ââ App ââ */
     function App() {
       const [brief, setBrief] = useState(null);
       const [sections, setSections] = useState([]);
@@ -370,31 +491,70 @@
       const [loading, setLoading] = useState(true);
       const [error, setError] = useState(null);
       const [now, setNow] = useState(new Date());
+      const [currentDate, setCurrentDate] = useState(formatDateISO(new Date()));
+      const [lastRefresh, setLastRefresh] = useState(null);
+      const [refreshing, setRefreshing] = useState(false);
+      const briefTimerRef = useRef(null);
 
+      // Clock
       useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
       }, []);
 
-      useEffect(() => {
-        fetch(API_URL)
+      // Fetch brief
+      const fetchBrief = useCallback((date, opts = {}) => {
+        const { silent } = opts;
+        if (!silent) setLoading(true);
+        else setRefreshing(true);
+
+        const url = date ? `${API_URL}?date=${date}` : API_URL;
+        fetch(url)
           .then((r) => r.json())
           .then((data) => {
             if (data.brief) {
               setBrief(data);
               const parsed = parseBrief(data.brief);
               setSections(parsed);
-              const exp = {};
-              parsed.forEach((s) => (exp[s.key] = true));
-              setExpanded(exp);
+              // Only auto-expand all on first load
+              if (!silent) {
+                const exp = {};
+                parsed.forEach((s) => (exp[s.key] = true));
+                setExpanded(exp);
+              }
+              setError(null);
             } else {
-              setError("No brief found yet today");
+              if (!silent) {
+                setError("No brief found for this date");
+                setSections([]);
+                setBrief(null);
+              }
             }
+            setLastRefresh(Date.now());
             setLoading(false);
+            setRefreshing(false);
           })
-          .catch((e) => { setError(e.message); setLoading(false); });
+          .catch((e) => {
+            if (!silent) { setError(e.message); setLoading(false); }
+            setRefreshing(false);
+          });
       }, []);
 
+      // Initial load + auto-refresh
+      useEffect(() => {
+        fetchBrief(currentDate);
+
+        // Auto-refresh every 5 min (only if viewing today)
+        if (briefTimerRef.current) clearInterval(briefTimerRef.current);
+        if (isToday(currentDate)) {
+          briefTimerRef.current = setInterval(() => {
+            fetchBrief(currentDate, { silent: true });
+          }, BRIEF_REFRESH_MS);
+        }
+        return () => { if (briefTimerRef.current) clearInterval(briefTimerRef.current); };
+      }, [currentDate, fetchBrief]);
+
+      // BTC ticker
       useEffect(() => {
         const fetchBTC = () => {
           fetch(BTC_API)
@@ -408,13 +568,27 @@
             .catch(() => {});
         };
         fetchBTC();
-        const interval = setInterval(fetchBTC, 60000);
+        const interval = setInterval(fetchBTC, BTC_REFRESH_MS);
         return () => clearInterval(interval);
       }, []);
 
+      // Keyboard shortcuts
+      useEffect(() => {
+        const handler = (e) => {
+          if (e.key === "ArrowLeft") { e.preventDefault(); setCurrentDate(d => shiftDate(d, -1)); }
+          if (e.key === "ArrowRight" && !isFuture(shiftDate(currentDate, 1))) {
+            e.preventDefault(); setCurrentDate(d => shiftDate(d, 1));
+          }
+          if (e.key === "t" || e.key === "T") { setCurrentDate(formatDateISO(new Date())); }
+          if (e.key === "r" || e.key === "R") { fetchBrief(currentDate, { silent: true }); }
+        };
+        window.addEventListener("keydown", handler);
+        return () => window.removeEventListener("keydown", handler);
+      }, [currentDate, fetchBrief]);
+
       const toggleSection = (key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
-      const briefDate = brief ? new Date(brief.date + "T12:00:00") : new Date();
+      const briefDate = brief ? brief.date : currentDate;
       const storedAt = brief?.stored_at ? new Date(brief.stored_at) : null;
 
       const priorityCount = sections.find((s) => s.key === "TODAY'S PRIORITIES")?.lines.length || 0;
@@ -437,7 +611,7 @@
             WebkitBackdropFilter: "blur(16px)",
             borderBottom: "1px solid #1a1a1a",
           }}>
-            <div style={{
+            <div className="top-bar-inner" style={{
               maxWidth: 800, margin: "0 auto", padding: "12px 20px",
               display: "flex", alignItems: "center", justifyContent: "space-between",
             }}>
@@ -447,7 +621,7 @@
                   background: "linear-gradient(135deg, #f7931a, #e67e00)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontFamily: "'Fira Code', monospace", fontWeight: 800, fontSize: 14, color: "#000",
-                  animation: "glow 3s ease infinite",
+                  animation: "glow 3s ease infinite", flexShrink: 0,
                 }}>BT</div>
                 <div>
                   <div style={{
@@ -468,35 +642,45 @@
             maxWidth: 800, margin: "0 auto", padding: "20px 20px 80px",
             position: "relative", zIndex: 2,
           }}>
-            {/* Date + Status bar */}
-            <div style={{
+            {/* Date nav + status bar */}
+            <div className="date-bar" style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
               marginBottom: 20, flexWrap: "wrap", gap: 10,
             }}>
-              <div style={{
-                fontFamily: "'Fira Code', monospace", fontSize: 13, fontWeight: 600,
-                color: "#f7931a", display: "flex", alignItems: "center", gap: 8,
-              }}>
-                {Icons.zap({ size: 14, color: "#f7931a" })}
-                {briefDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })}
-              </div>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 6,
-                fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#444",
-              }}>
-                {Icons.clock({ size: 10, color: "#444" })}
-                {now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                {storedAt && (
-                  <span style={{ marginLeft: 8, color: "#333" }}>
-                    brief generated {storedAt.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                )}
+              <DateNav
+                currentDate={currentDate}
+                onPrev={() => setCurrentDate(d => shiftDate(d, -1))}
+                onNext={() => setCurrentDate(d => shiftDate(d, 1))}
+                onToday={() => setCurrentDate(formatDateISO(new Date()))}
+                hasNext={!isFuture(shiftDate(currentDate, 1))}
+              />
+
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <StatusDot live={!error && !loading} lastRefresh={lastRefresh} />
+
+                <button onClick={() => fetchBrief(currentDate, { silent: true })} style={{
+                  background: "rgba(255,255,255,0.04)", border: "1px solid #222", borderRadius: 6,
+                  padding: "5px 8px", display: "flex", alignItems: "center", gap: 5, color: "#666",
+                  fontFamily: "'Fira Code', monospace", fontSize: 10, transition: "all 0.15s",
+                }} title="Refresh (R)">
+                  <div style={{ animation: refreshing ? "spin 0.7s linear infinite" : "none" }}>
+                    {Icons.refresh({ size: 12, color: "#666" })}
+                  </div>
+                </button>
+
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#444",
+                }}>
+                  {Icons.clock({ size: 10, color: "#444" })}
+                  {now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                </div>
               </div>
             </div>
 
             {/* Quick Stats */}
             {!loading && !error && (
-              <div style={{
+              <div className="stats-grid" style={{
                 display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10,
                 marginBottom: 20, animation: "slideUp 0.4s ease both",
               }}>
@@ -553,7 +737,18 @@
                   fontFamily: "'Fira Code', monospace", fontSize: 14, color: "#f87171",
                   marginTop: 12, marginBottom: 8,
                 }}>{error}</div>
-                <div style={{ fontSize: 13, color: "#444" }}>Run the daily brief to populate.</div>
+                <div style={{ fontSize: 13, color: "#444" }}>
+                  {isToday(currentDate) ? "Run the daily brief to populate." : "No brief was stored for this date."}
+                </div>
+                {!isToday(currentDate) && (
+                  <button onClick={() => setCurrentDate(formatDateISO(new Date()))} style={{
+                    marginTop: 16, background: "rgba(247,147,26,0.1)", border: "1px solid rgba(247,147,26,0.25)",
+                    borderRadius: 6, padding: "8px 16px", fontFamily: "'Fira Code', monospace",
+                    fontSize: 12, fontWeight: 600, color: "#f7931a",
+                  }}>
+                    Go to today
+                  </button>
+                )}
               </div>
             )}
 
@@ -572,6 +767,31 @@
               </div>
             )}
 
+            {/* Keyboard hints */}
+            {!loading && !error && (
+              <div style={{
+                marginTop: 24, display: "flex", justifyContent: "center", gap: 16,
+                animation: "fadeIn 0.6s ease 0.5s both",
+              }}>
+                {[
+                  { key: "ââ", label: "navigate days" },
+                  { key: "T", label: "today" },
+                  { key: "R", label: "refresh" },
+                ].map(({ key, label }) => (
+                  <div key={key} style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#2a2a2a",
+                  }}>
+                    <span style={{
+                      background: "#141414", border: "1px solid #1e1e1e", borderRadius: 4,
+                      padding: "2px 6px", fontSize: 9, color: "#444",
+                    }}>{key}</span>
+                    {label}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Footer */}
             <div style={{
               marginTop: 32, paddingTop: 20, borderTop: "1px solid #141414",
@@ -581,8 +801,16 @@
                 fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#2a2a2a",
                 letterSpacing: "0.06em",
               }}>
-                BT COMMAND CENTER • BITCOIN TIMBER HOLDINGS, LLC • {new Date().getFullYear()}
+                BT COMMAND CENTER â¢ BITCOIN TIMBER HOLDINGS, LLC â¢ {new Date().getFullYear()}
               </div>
+              {storedAt && (
+                <div style={{
+                  fontFamily: "'Fira Code', monospace", fontSize: 9, color: "#1e1e1e",
+                  marginTop: 4,
+                }}>
+                  brief generated {storedAt.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </div>
+              )}
             </div>
           </div>
         </div>
