@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BT Daily Brief</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface-raised: #1a1a1a;
+      --border: #222222;
+      --text: #e0e0e0;
+      --text-dim: #777777;
+      --orange: #f7931a;
+      --orange-dim: rgba(247, 147, 26, 0.15);
+      --green: #4ade80;
+      --yellow: #fbbf24;
+      --red: #f87171;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .noise {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 16px 64px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 0 24px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--orange);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      color: #000;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .logo-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      color: var(--text);
+    }
+
+    .logo-sub {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-dim);
+      letter-spacing: 0.02em;
+    }
+
+    .date-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--orange);
+      background: var(--orange-dim);
+      padding: 6px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(247, 147, 26, 0.25);
+    }
+
+    /* Brief sections */
+    .section {
+      margin-bottom: 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .section:nth-child(1) { animation-delay: 0.05s; }
+    .section:nth-child(2) { animation-delay: 0.1s; }
+    .section:nth-child(3) { animation-delay: 0.15s; }
+    .section:nth-child(4) { animation-delay: 0.2s; }
+    .section:nth-child(5) { animation-delay: 0.25s; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      padding: 14px 18px;
+      background: var(--surface-raised);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--orange);
+      background: var(--orange-dim);
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+    }
+
+    .section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .section-body {
+      padding: 16px 18px;
+    }
+
+    .section-body .line {
+      padding: 4px 0;
+      font-size: 14px;
+      color: var(--text);
+      display: flex;
+      gap: 8px;
+    }
+
+    .line-bullet {
+      color: var(--text-dim);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .line-arrow {
+      color: var(--orange);
+      flex-shrink: 0;
+      font-weight: 600;
+      margin-top: 1px;
+    }
+
+    .line-content {
+      flex: 1;
+    }
+
+    /* Pipeline status colors */
+    .status-warm { color: var(--yellow); }
+    .status-active { color: var(--yellow); }
+    .status-stalled { color: var(--red); }
+    .status-green { color: var(--green); }
+
+    /* One Number highlight */
+    .one-number {
+      text-align: center;
+      padding: 28px 18px;
+    }
+
+    .one-number .big {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 64px;
+      font-weight: 700;
+      color: var(--orange);
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .one-number .caption {
+      font-size: 14px;
+      color: var(--text-dim);
+      max-width: 360px;
+      margin: 0 auto;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 24px 0;
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
+    }
+
+    .footer p {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 40vh;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--text-dim);
+    }
+
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+
+    .empty-state h2 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="container">
+    <div class="header">
+      <div class="logo">
+        <div class="logo-icon">BT</div>
+        <div>
+          <div class="logo-text">DAILY BRIEF</div>
+          <div class="logo-sub">Bitcoin Timber Holdings</div>
+        </div>
+      </div>
+      <div class="date-badge" id="dateBadge">loading...</div>
+    </div>
+    <div id="content">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">Fetching brief...</div>
+      </div>
+    </div>
+    <div class="footer">
+      <p>BT Brief System &middot; bitcointimber@gmail.com</p>
+    </div>
+  </div>
+
+  <script>
+    async function loadBrief() {
+      try {
+        const res = await fetch('/api/brief');
+        const data = await res.json();
+
+        if (!data.brief) {
+          document.getElementById('content').innerHTML = `
+            <div class="empty-state">
+              <div class="icon">⚡</div>
+              <h2>No brief yet today</h2>
+              <p>The daily brief hasn't been generated yet. Check back soon.</p>
+            </div>`;
+          document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+          return;
+        }
+
+        // Set date
+        const d = new Date(data.date + 'T12:00:00');
+        document.getElementById('dateBadge').textContent = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+
+        // Parse sections from brief text
+        const text = data.brief;
+        const sections = parseBrief(text);
+        renderSections(sections);
+      } catch (err) {
+        document.getElementById('content').innerHTML = `
+          <div class="empty-state">
+            <div class="icon">⚠️</div>
+            <h2>Failed to load brief</h2>
+            <p>${err.message}</p>
+          </div>`;
+      }
+    }
+
+    function parseBrief(text) {
+      const sectionDefs = [
+        { num: '1', key: "YESTERDAY'S WORK", title: "Yesterday's Work" },
+        { num: '2', key: 'OPEN THREADS', title: 'Open Threads' },
+        { num: '3', key: "TODAY'S PRIORITIES", title: "Today's Priorities" },
+        { num: '4', key: 'PIPELINE PULSE', title: 'Pipeline Pulse' },
+        { num: '5', key: 'ONE NUMBER', title: 'One Number' },
+      ];
+
+      const lines = text.split('\n');
+      const sections = [];
+      let current = null;
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        // Check if this line is a section header
+        const matchedSection = sectionDefs.find(s => trimmed.includes(s.key));
+        if (matchedSection) {
+          if (current) sections.push(current);
+          current = { ...matchedSection, lines: [] };
+          continue;
+        }
+        if (current && trimmed && !trimmed.startsWith('━') && !trimmed.startsWith('⚡ BT DAILY') && !trimmed.startsWith('Generated by')) {
+          current.lines.push(trimmed);
+        }
+      }
+      if (current) sections.push(current);
+      return sections;
+    }
+
+    function renderSections(sections) {
+      let html = '';
+      for (const sec of sections) {
+        if (sec.key === 'ONE NUMBER') {
+          html += renderOneNumber(sec);
+        } else {
+          html += renderSection(sec);
+        }
+      }
+      document.getElementById('content').innerHTML = html;
+    }
+
+    function renderSection(sec) {
+      let bodyHtml = '';
+      for (const line of sec.lines) {
+        if (line.startsWith('→') || line.startsWith('->')) {
+          const content = line.replace(/^→\s*/, '').replace(/^->\s*/, '');
+          bodyHtml += `<div class="line"><span class="line-arrow">→</span><span class="line-content">${esc(content)}</span></div>`;
+        } else if (line.startsWith('-') || line.startsWith('•')) {
+          const content = line.replace(/^[-•]\s*/, '');
+          bodyHtml += `<div class="line"><span class="line-bullet">›</span><span class="line-content">${highlightStatus(esc(content))}</span></div>`;
+        } else {
+          bodyHtml += `<div class="line"><span class="line-content">${highlightStatus(esc(content))}</span></div>`;
+        }
+      }
+
+      return `<div class="section">
+        <div class="section-header">
+          <div class="section-num">${sec.num}</div>
+          <div class="section-title">${sec.title}</div>
+        </div>
+        <div class="section-body">${bodyHtml}</div>
+      </div>`;
+
+      function content() { return line; } // not used, just fallback
+    }
+
+    function renderOneNumber(sec) {
+      const text = sec.lines.join(' ');
+      const match = text.match(/^(\d+[\.,]?\d*%?)\s*[—–-]\s*(.*)/);
+      let big = '', caption = '';
+      if (match) {
+        big = match[1];
+        caption = match[2];
+      } else {
+        // Try to extract leading number
+        const numMatch = text.match(/^(\d+[\.,]?\d*%?)/);
+        big = numMatch ? numMatch[1] : '—';
+        caption = numMatch ? text.slice(numMatch[0].length).replace(/^\s*[—–-]\s*/, '') : text;
+      }
+
+      return `<div class="section">
+        <div class="section-header">
+          <div class="section-num">5</div>
+          <div class="section-title">One Number</div>
+        </div>
+        <div class="one-number">
+          <div class="big">${esc(big)}</div>
+          <div class="caption">${esc(caption)}</div>
+        </div>
+      </div>`;
+    }
+
+    function highlightStatus(html) {
+      return html
+        .replace(/🟡\s*WARM/g, '<span class="status-warm">🟡 WARM</span>')
+        .replace(/🟡\s*ACTIVE/g, '<span class="status-active">🟡 ACTIVE</span>')
+        .replace(/🔴\s*STALLED/g, '<span class="status-stalled">🔴 STALLED</span>')
+        .replace(/🟢\s*(\w+)/g, '<span class="status-green">🟢 $1</span>');
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    loadBrief();
+  </script>
+</body>
+</html>
