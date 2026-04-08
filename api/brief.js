@@ -1,4 +1,7 @@
-const briefs = {};
+import { kv } from '@vercel/kv';
+
+const API_KEY = process.env.BT_API_KEY || 'bt-2026-canje-river';
+const PREFIX = 'brief:';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -6,8 +9,6 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Api-Key');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-
-  const API_KEY = process.env.BT_API_KEY || 'bt-2026-canje-river';
 
   if (req.method === 'POST') {
     const apiKey = req.headers['x-api-key'];
@@ -18,16 +19,13 @@ export default async function handler(req, res) {
 
     const data = { brief, date, stored_at: new Date().toISOString() };
 
-    // Store in Vercel Blob if available, otherwise memory
     try {
-      const { put } = await import('@vercel/blob');
-      await put(`briefs/${date}.json`, JSON.stringify(data), {
-        access: 'public',
-        addRandomSuffix: false,
-      });
+      await kv.set(`${PREFIX}${date}`, JSON.stringify(data));
+      // Maintain a sorted set of dates for quick listing
+      await kv.zadd('brief:dates', { score: Date.parse(date + 'T00:00:00Z'), member: date });
     } catch (e) {
-      console.log('[bt-brief] Blob unavailable, memory only:', e.message);
-      briefs[date] = data;
+      console.error('[bt-brief] KV write error:', e.message);
+      return res.status(500).json({ error: 'Storage write failed', detail: e.message });
     }
 
     return res.status(200).json({ ok: true, date, stored_at: data.stored_at });
@@ -36,49 +34,39 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { date, list: listMode } = req.query;
 
-    // Try Blob first
     try {
-      const { list: blobList } = await import('@vercel/blob');
-      const { blobs } = await blobList({ prefix: 'briefs/' });
-
+      // List all available brief dates
       if (listMode === 'true') {
-        const dates = (blobs || [])
-          .map(b => b.pathname.replace('briefs/', '').replace('.json', ''))
-          .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
-          .sort()
-          .reverse();
-        return res.json({ dates });
+        const dates = await kv.zrange('brief:dates', 0, -1, { rev: true });
+        return res.json({ dates: dates || [] });
       }
 
-      if (blobs && blobs.length > 0) {
-        let target;
-        if (date) {
-          target = blobs.find(b => b.pathname === `briefs/${date}.json`);
+      // Fetch specific date
+      if (date) {
+        const raw = await kv.get(`${PREFIX}${date}`);
+        if (raw) {
+          const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          return res.json(data);
         }
-        if (!target) {
-          const sorted = [...blobs].sort((a, b) => b.pathname.localeCompare(a.pathname));
-          target = sorted[0];
-        }
-        if (target) {
-          const r = await fetch(target.url);
-          const data = await r.json();
+        return res.json({ brief: null, date });
+      }
+
+      // No date specified — return latest
+      const dates = await kv.zrange('brief:dates', 0, 0, { rev: true });
+      if (dates && dates.length > 0) {
+        const latest = dates[0];
+        const raw = await kv.get(`${PREFIX}${latest}`);
+        if (raw) {
+          const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
           return res.json(data);
         }
       }
+
+      return res.json({ brief: null, date: null });
     } catch (e) {
-      console.log('[bt-brief] Blob read failed:', e.message);
+      console.error('[bt-brief] KV read error:', e.message);
+      return res.status(500).json({ error: 'Storage read failed', detail: e.message });
     }
-
-    // Fallback to memory
-    if (listMode === 'true') {
-      return res.json({ dates: Object.keys(briefs).sort().reverse() });
-    }
-
-    if (date && briefs[date]) return res.json(briefs[date]);
-    const keys = Object.keys(briefs).sort().reverse();
-    if (keys.length > 0) return res.json(briefs[keys[0]]);
-
-    return res.json({ brief: null, date: date || null });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
