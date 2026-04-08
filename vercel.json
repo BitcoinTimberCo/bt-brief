@@ -1,6 +1,7 @@
 {
-  "rewrites": [
-    { "source": "/api/brief", "destination": "/api/brief" },
-    { "source": "/", "destination": "/index.html" }
+  "version": 2,
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }
