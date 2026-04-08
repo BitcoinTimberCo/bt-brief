@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BT Command Center</title>
-  <meta name="description" content="Bitcoin Timber Holdings â Daily Brief Command Center">
+  <meta name="description" content="Bitcoin Timber Holdings — Daily Brief Command Center">
   <meta name="theme-color" content="#f7931a">
   <meta property="og:title" content="BT Command Center">
-  <meta property="og:description" content="Bitcoin Timber Holdings â Daily Brief Command Center">
+  <meta property="og:description" content="Bitcoin Timber Holdings — Daily Brief Command Center">
   <meta property="og:type" content="website">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23f7931a'/><text x='50' y='68' font-family='monospace' font-size='50' font-weight='900' fill='%23000' text-anchor='middle'>BT</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,8 +28,6 @@
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: #0a0a0a; }
     ::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
-
-    /* Responsive */
     @media (max-width: 640px) {
       .top-bar-inner { flex-direction: column !important; gap: 10px !important; align-items: flex-start !important; }
       .btc-ticker { align-self: flex-start !important; }
@@ -52,8 +50,8 @@
 
     const API_URL = "/api/brief";
     const BTC_API = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true";
-    const BRIEF_REFRESH_MS = 5 * 60 * 1000; // 5 min
-    const BTC_REFRESH_MS = 60 * 1000; // 60s
+    const BRIEF_REFRESH_MS = 5 * 60 * 1000;
+    const BTC_REFRESH_MS = 60 * 1000;
 
     const SECTION_COLORS = {
       "YESTERDAY'S WORK": "#4ade80",
@@ -66,11 +64,13 @@
     const PIPELINE_STATUS = {
       WARM: { color: "#fbbf24", bg: "rgba(251,191,36,0.1)", border: "rgba(251,191,36,0.25)" },
       ACTIVE: { color: "#4ade80", bg: "rgba(74,222,128,0.1)", border: "rgba(74,222,128,0.25)" },
+      HOT: { color: "#f97316", bg: "rgba(249,115,22,0.1)", border: "rgba(249,115,22,0.25)" },
       STALLED: { color: "#f87171", bg: "rgba(248,113,113,0.1)", border: "rgba(248,113,113,0.25)" },
+      COLD: { color: "#94a3b8", bg: "rgba(148,163,184,0.1)", border: "rgba(148,163,184,0.25)" },
       CLOSED: { color: "#6b7280", bg: "rgba(107,114,128,0.1)", border: "rgba(107,114,128,0.25)" },
     };
 
-    /* ââ SVG Icons ââ */
+    /* — SVG Icons — */
     const Icon = ({ d, size = 14, color = "#fff", strokeWidth = 2 }) => (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
         stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -95,7 +95,6 @@
       alert: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
       calendar: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
       check: (p) => <Icon {...p} d="M20 6L9 17l-5-5" />,
-      wifi: (p) => <svg width={p.size||14} height={p.size||14} viewBox="0 0 24 24" fill="none" stroke={p.color||"#fff"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>,
     };
 
     const SECTION_ICONS = {
@@ -106,7 +105,7 @@
       "ONE NUMBER": Icons.hash,
     };
 
-    /* ââ Helpers ââ */
+    /* — Helpers — */
     function formatDateISO(d) {
       return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
     }
@@ -115,12 +114,8 @@
       d.setDate(d.getDate() + days);
       return formatDateISO(d);
     }
-    function isToday(isoStr) {
-      return isoStr === formatDateISO(new Date());
-    }
-    function isFuture(isoStr) {
-      return isoStr > formatDateISO(new Date());
-    }
+    function isToday(isoStr) { return isoStr === formatDateISO(new Date()); }
+    function isFuture(isoStr) { return isoStr > formatDateISO(new Date()); }
     function relativeDay(isoStr) {
       const today = formatDateISO(new Date());
       const yesterday = shiftDate(today, -1);
@@ -129,7 +124,7 @@
       return null;
     }
 
-    /* ââ Parsers ââ */
+    /* — Parsers (FIXED: case-insensitive matching) — */
     function parseBrief(text) {
       const sectionDefs = [
         { key: "YESTERDAY'S WORK", title: "Yesterday's Work" },
@@ -141,15 +136,20 @@
       const lines = text.split("\n");
       const sections = [];
       let current = null;
+
+      // Also skip lines that are just headers or meta
+      const skipPatterns = [/^-{3,}$/, /^={3,}$/, /^⚡\s*BT\s*DAILY/i, /^Generated by/i, /^Revenue Snapshot/i, /^Today's Schedule/i];
+
       for (const line of lines) {
         const trimmed = line.trim();
-        const matched = sectionDefs.find((s) => trimmed.includes(s.key));
+        // FIXED: case-insensitive section matching
+        const matched = sectionDefs.find((s) => trimmed.toUpperCase().includes(s.key));
         if (matched) {
           if (current) sections.push(current);
           current = { ...matched, lines: [] };
           continue;
         }
-        if (current && trimmed && !trimmed.startsWith("â") && !trimmed.startsWith("â¡ BT DAILY") && !trimmed.startsWith("Generated by")) {
+        if (current && trimmed && !skipPatterns.some(p => p.test(trimmed))) {
           current.lines.push(trimmed);
         }
       }
@@ -159,31 +159,35 @@
 
     function parsePipeline(lines) {
       return lines.map((line) => {
-        const cleaned = line.replace(/^[-â¢]\s*/, "");
+        const cleaned = line.replace(/^[-•🔥🟡🔴🟢]\s*/, "");
         let status = "ACTIVE";
-        if (cleaned.includes("WARM")) status = "WARM";
-        if (cleaned.includes("STALLED")) status = "STALLED";
-        if (cleaned.includes("CLOSED")) status = "CLOSED";
-        const nameMatch = cleaned.match(/^(.+?)\s*[â(]/);
-        const name = nameMatch ? nameMatch[1].trim() : cleaned.split("â")[0].trim();
-        const detailMatch = cleaned.match(/â\s*(.+)/);
-        const detail = detailMatch ? detailMatch[1].replace(/ð¡|ð´|ð¢/g, "").trim() : "";
+        const upper = cleaned.toUpperCase();
+        if (upper.includes("WARM") || cleaned.startsWith("🟡")) status = "WARM";
+        if (upper.includes("STALLED")) status = "STALLED";
+        if (upper.includes("CLOSED")) status = "CLOSED";
+        if (upper.includes("COLD") || cleaned.startsWith("🔴")) status = "COLD";
+        if (upper.includes("HOT") || cleaned.startsWith("🔥")) status = "HOT";
+        // Extract name and detail
+        const nameMatch = cleaned.replace(/^🔥|^🟡|^🔴|^🟢/, "").trim().match(/^(.+?)\s*[—(]/);
+        const name = nameMatch ? nameMatch[1].trim() : cleaned.replace(/^🔥|^🟡|^🔴|^🟢/, "").split("—")[0].trim();
+        const detailMatch = cleaned.match(/—\s*(.+)/);
+        const detail = detailMatch ? detailMatch[1].trim() : "";
         return { name, status, detail, raw: cleaned };
       });
     }
 
     function parseOneNumber(lines) {
       const text = lines.join(" ");
-      const match = text.match(/^(\d+[\.,]?\d*%?)\s*[ââ\-]\s*(.*)/);
+      const match = text.match(/^(\d+[\.,]?\d*%?)\s*[—–\-]\s*(.*)/);
       if (match) return { number: match[1], caption: match[2] };
-      const numMatch = text.match(/^(\d+[\.,]?\d*%?)/);
+      const numMatch = text.match(/(\d+[\.,]?\d*%?)/);
       return {
-        number: numMatch ? numMatch[1] : "â",
-        caption: numMatch ? text.slice(numMatch[0].length).replace(/^\s*[ââ\-]\s*/, "") : text,
+        number: numMatch ? numMatch[1] : "—",
+        caption: numMatch ? text.slice(text.indexOf(numMatch[1]) + numMatch[1].length).replace(/^\s*[—–\-]\s*/, "") : text,
       };
     }
 
-    /* ââ Components ââ */
+    /* — Components — */
     function Grain() {
       return (
         <div style={{
@@ -216,7 +220,7 @@
               width: 22, height: 22, borderRadius: 4,
               background: "#f7931a", display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 11, fontWeight: 800, color: "#000", fontFamily: "'Fira Code', monospace",
-            }}>â¿</div>
+            }}>₿</div>
             <span style={{ fontFamily: "'Fira Code', monospace", fontSize: 14, fontWeight: 600, color: "#f7931a" }}>
               {price ? `$${price.toLocaleString()}` : "..."}
             </span>
@@ -247,15 +251,16 @@
             animation: live ? "pulse 2s ease infinite" : "none",
           }} />
           <span>{live ? "LIVE" : "OFFLINE"}</span>
-          {label && <span style={{ color: "#333" }}>â¢ {label}</span>}
+          {label && <span style={{ color: "#333" }}>• {label}</span>}
         </div>
       );
     }
 
-    function DateNav({ currentDate, onPrev, onNext, onToday, hasNext }) {
+    function DateNav({ currentDate, onPrev, onNext, onToday, hasNext, availableDates }) {
       const d = new Date(currentDate + "T12:00:00");
       const dayLabel = relativeDay(currentDate);
       const formatted = d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+      const hasBrief = !availableDates || availableDates.length === 0 || availableDates.includes(currentDate);
       return (
         <div className="date-nav" style={{
           display: "flex", alignItems: "center", gap: 8,
@@ -274,7 +279,7 @@
               fontFamily: "'Fira Code', monospace", fontSize: 13, fontWeight: 600,
               color: "#f7931a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
             }}>
-              {dayLabel && <span style={{ color: "#fff", marginRight: 6 }}>{dayLabel} â</span>}
+              {dayLabel && <span style={{ color: "#fff", marginRight: 6 }}>{dayLabel} —</span>}
               {formatted}
             </span>
           </div>
@@ -454,8 +459,8 @@
           {isExpanded && (
             <div style={{ padding: "12px 18px" }}>
               {section.lines.map((line, i) => {
-                const isArrow = line.startsWith("â") || line.startsWith("->");
-                const content = line.replace(/^[â\->â¢\-]\s*/, "");
+                const isArrow = line.startsWith("→") || line.startsWith("->") || /^\d+\./.test(line);
+                const content = line.replace(/^[→\->•\-]\s*/, "").replace(/^\d+\.\s*/, "");
                 return (
                   <div key={i} style={{
                     display: "flex", gap: 10, padding: "7px 0",
@@ -466,7 +471,7 @@
                       color: isArrow ? accentColor : "#444", flexShrink: 0, marginTop: 2,
                       fontWeight: isArrow ? 700 : 400, fontSize: 14,
                     }}>
-                      {isArrow ? "â" : "âº"}
+                      {isArrow ? "→" : "›"}
                     </span>
                     <span style={{
                       fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#ccc", lineHeight: 1.5,
@@ -481,7 +486,7 @@
       );
     }
 
-    /* ââ App ââ */
+    /* — App — */
     function App() {
       const [brief, setBrief] = useState(null);
       const [sections, setSections] = useState([]);
@@ -494,12 +499,30 @@
       const [currentDate, setCurrentDate] = useState(formatDateISO(new Date()));
       const [lastRefresh, setLastRefresh] = useState(null);
       const [refreshing, setRefreshing] = useState(false);
+      const [availableDates, setAvailableDates] = useState([]);
       const briefTimerRef = useRef(null);
 
       // Clock
       useEffect(() => {
         const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
+      }, []);
+
+      // Fetch available dates
+      useEffect(() => {
+        fetch(`${API_URL}?list=true`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.dates && data.dates.length > 0) {
+              setAvailableDates(data.dates);
+              // If today has no brief, jump to latest available date
+              const today = formatDateISO(new Date());
+              if (!data.dates.includes(today) && data.dates.length > 0) {
+                setCurrentDate(data.dates[0]); // most recent
+              }
+            }
+          })
+          .catch(() => {});
       }, []);
 
       // Fetch brief
@@ -516,7 +539,6 @@
               setBrief(data);
               const parsed = parseBrief(data.brief);
               setSections(parsed);
-              // Only auto-expand all on first load
               if (!silent) {
                 const exp = {};
                 parsed.forEach((s) => (exp[s.key] = true));
@@ -543,8 +565,6 @@
       // Initial load + auto-refresh
       useEffect(() => {
         fetchBrief(currentDate);
-
-        // Auto-refresh every 5 min (only if viewing today)
         if (briefTimerRef.current) clearInterval(briefTimerRef.current);
         if (isToday(currentDate)) {
           briefTimerRef.current = setInterval(() => {
@@ -588,13 +608,16 @@
 
       const toggleSection = (key) => setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
 
-      const briefDate = brief ? brief.date : currentDate;
       const storedAt = brief?.stored_at ? new Date(brief.stored_at) : null;
+      const briefDate = brief ? brief.date : currentDate;
 
       const priorityCount = sections.find((s) => s.key === "TODAY'S PRIORITIES")?.lines.length || 0;
       const threadCount = sections.find((s) => s.key === "OPEN THREADS")?.lines.length || 0;
       const pipelineLines = sections.find((s) => s.key === "PIPELINE PULSE")?.lines || [];
-      const warmCount = pipelineLines.filter((l) => l.includes("WARM") || l.includes("ACTIVE")).length;
+      const hotCount = pipelineLines.filter((l) => {
+        const u = l.toUpperCase();
+        return u.includes("WARM") || u.includes("ACTIVE") || u.includes("HOT") || l.startsWith("🔥");
+      }).length;
 
       return (
         <div style={{
@@ -653,6 +676,7 @@
                 onNext={() => setCurrentDate(d => shiftDate(d, 1))}
                 onToday={() => setCurrentDate(formatDateISO(new Date()))}
                 hasNext={!isFuture(shiftDate(currentDate, 1))}
+                availableDates={availableDates}
               />
 
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -678,6 +702,17 @@
               </div>
             </div>
 
+            {/* Brief count indicator */}
+            {availableDates.length > 0 && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 6, marginBottom: 14,
+                fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#333",
+              }}>
+                {Icons.calendar({ size: 10, color: "#333" })}
+                <span>{availableDates.length} brief{availableDates.length !== 1 ? "s" : ""} stored</span>
+              </div>
+            )}
+
             {/* Quick Stats */}
             {!loading && !error && (
               <div className="stats-grid" style={{
@@ -687,7 +722,7 @@
                 {[
                   { label: "PRIORITIES", value: priorityCount, color: "#f7931a", icon: Icons.target },
                   { label: "THREADS", value: threadCount, color: "#fbbf24", icon: Icons.gitBranch },
-                  { label: "WARM DEALS", value: warmCount, color: "#4ade80", icon: Icons.trendUp },
+                  { label: "HOT DEALS", value: hotCount, color: "#4ade80", icon: Icons.trendUp },
                 ].map(({ label, value, color, icon: StatIcon }, i) => (
                   <div key={i} style={{
                     background: "#0d0d0d", border: "1px solid #1a1a1a", borderRadius: 8,
@@ -740,13 +775,13 @@
                 <div style={{ fontSize: 13, color: "#444" }}>
                   {isToday(currentDate) ? "Run the daily brief to populate." : "No brief was stored for this date."}
                 </div>
-                {!isToday(currentDate) && (
-                  <button onClick={() => setCurrentDate(formatDateISO(new Date()))} style={{
+                {availableDates.length > 0 && (
+                  <button onClick={() => setCurrentDate(availableDates[0])} style={{
                     marginTop: 16, background: "rgba(247,147,26,0.1)", border: "1px solid rgba(247,147,26,0.25)",
                     borderRadius: 6, padding: "8px 16px", fontFamily: "'Fira Code', monospace",
                     fontSize: 12, fontWeight: 600, color: "#f7931a",
                   }}>
-                    Go to today
+                    Go to latest brief
                   </button>
                 )}
               </div>
@@ -774,7 +809,7 @@
                 animation: "fadeIn 0.6s ease 0.5s both",
               }}>
                 {[
-                  { key: "ââ", label: "navigate days" },
+                  { key: "←→", label: "navigate days" },
                   { key: "T", label: "today" },
                   { key: "R", label: "refresh" },
                 ].map(({ key, label }) => (
@@ -801,7 +836,7 @@
                 fontFamily: "'Fira Code', monospace", fontSize: 10, color: "#2a2a2a",
                 letterSpacing: "0.06em",
               }}>
-                BT COMMAND CENTER â¢ BITCOIN TIMBER HOLDINGS, LLC â¢ {new Date().getFullYear()}
+                BT COMMAND CENTER • BITCOIN TIMBER HOLDINGS, LLC • {new Date().getFullYear()}
               </div>
               {storedAt && (
                 <div style={{
